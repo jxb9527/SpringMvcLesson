@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.1.xsd 
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
+		">
+	
+	<!-- springmvc配置拦截/所有资源都被拦截，图片无法展示，将除控制层以外的资源交回给select来处理 -->
+	<mvc:default-servlet-handler/>
+	
+	<!-- 注解交给springmvc -->
+	<mvc:annotation-driven>
+		<!-- 配置消息转换器 -->
+		<mvc:message-converters>
+		  <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter">
+          <property name="supportedMediaTypes">
+    				<list>
+    					<value>text/html</value>
+    					<value>application/x-www-form-urlencoded</value>
+    				</list>
+    			</property>
+       	  </bean>
+		
+			<!-- 配置返回List<Map<String,Object>>解析成json的消息转换器 -->
+			<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<property name="supportedMediaTypes">
+					<list>
+						<value>text/html</value>
+						<value>application/x-www-form-urlencoded;charset=utf-8</value>
+					</list>
+				</property>
+			
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+	
+	<!-- 国际化   配置用于拦截url上的参数拦截器 -->
+	<mvc:interceptors>
+		<bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+			<property name="paramName" value="locale"></property>
+		</bean>
+		<!-- 配置自定义的拦截器 -->
+		<mvc:interceptor>
+			<!-- 表示要拦截的资源 -->
+			<mvc:mapping path="/inter"/>
+			<bean id="myinteractor" class="cn.et.springmvc.lesson5.MyInteractor"></bean>
+		</mvc:interceptor>
+		
+		<!-- 配置防止重复提交拦截器 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/tm"/>
+			<bean id="tokenInteractor" class="cn.et.springmvc.lesson5.TokenInteractor"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	
+	<!-- 国际化   参数需要被临时存储在某个地方，当用户再次访问，使用之前设置的参数 -->
+	<bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver"></bean>
+	
+	<!-- 配置视图解析器 -->
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- 在视图前加/ -->
+		<property name="prefix" value="/"></property>
+		<!-- 在视图后加.jsp -->
+		<property name="suffix" value=".jsp"></property>
+	</bean>
+	
+	<!-- 自动扫描带注解的创建bean -->
+	<context:component-scan base-package="cn.et.springmvc.lesson6"></context:component-scan>
+	
+	
+	<!-- 读取连接数据库的资源文件 -->
+	<context:property-placeholder location="classpath:/jdbcMysql.properties"/>
+	
+	<!-- 解析文件上传 -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 限制上传文件大小5M -->
+		<property name="maxUploadSize" value="5242800"></property>
+	</bean>
+	
+	<!-- 配置连接数据 -->	
+	<bean id="dataSouce" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="url" value="${url}"></property>
+    	<property name="username" value="${userName1}"></property>
+    	<property name="password" value="${passWord}"></property>
+    	<property name="driverClassName" value="${driverClass}"></property>
+	</bean>
+	
+	
+	<!-- 操作数据库常用方法 -->	
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<!-- 注入数据源  告诉是哪个数据库-->
+    	<property name="dataSource" ref="dataSouce"></property>
+    </bean>
+    
+	
+	<!-- 配置事务管理器 不再使用jdbc的commit和rollback ，必须由事务管理器提供 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<!-- 注入数据源 告诉是哪个数据库-->
+		<property name="dataSource" ref="dataSouce"></property>
+	</bean>
+	
+	
+  
+  	<!-- 定义通知 	transaction-manager="transactionManager"告诉是哪个事务管理器-->
+  	<tx:advice id="myAdvice" transaction-manager="transactionManager">
+  		<!-- 定制方法的拦截 -->
+  		<tx:attributes>
+  			<!-- update开头的就拦截 -->
+  			<tx:method name="update*" propagation="REQUIRED" rollback-for="java.lang.Exception"/>
+    		<tx:method name="save*"/>
+    		<tx:method name="delete*"/>
+  			<!--
+  				除了以上几种拦截，其他的所有，都不拦截 
+  				只读事务属性（除特定的方法以外其他的业务逻辑方法都不应该操作事务）read-only="true" 设置只读事务-->
+      		 <tx:method name="*" read-only="true"/>
+  		</tx:attributes>
+  	</tx:advice>
+  
+  
+  	<!-- 定义切点 -->
+  	  <aop:config>
+  		<aop:pointcut expression="execution(* cn.*..*.service.*.*(..))" id="myPointCut"/>
+  		<!-- 告诉是哪个通知  是哪个切点-->
+  		<aop:advisor advice-ref="myAdvice" pointcut-ref="myPointCut"/>
+  	</aop:config>
+</beans>

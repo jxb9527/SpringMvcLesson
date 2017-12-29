@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
+  <display-name></display-name>
+  
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath:spring.xml</param-value>
+	</context-param>
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+  <!-- 请求method支持put和delete必须添加过滤器 必须在HiddenHttpMethodFilter之前-->
+  <!-- <filter>
+  	<filter-name>multipartFilter</filter-name>
+  	<filter-class>org.springframework.web.multipart.support.MultipartFilter</filter-class>
+  </filter>
+  <filter-mapping>
+  	<filter-name>multipartFilter</filter-name>
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping> -->
+  
+  <!-- 请求method支持put和delete必须添加过滤器 -->
+  <filter>
+  	<filter-name>myFilter</filter-name>
+  	<filter-class>org.springframework.web.filter.HiddenHttpMethodFilter</filter-class>
+  </filter>
+  <filter-mapping>
+  	<filter-name>myFilter</filter-name>
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping>
+  
+  <!-- 解决乱码配置过滤器 -->
+  <filter>
+  	<filter-name>encodingFilter</filter-name>
+  	<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+  	
+  	<init-param>
+  		<param-name>encoding</param-name>
+  		<param-value>UTF-8</param-value>
+  	</init-param>
+  	
+  	<init-param>
+  		<param-name>forceEncoding</param-name>
+  		<param-value>true</param-value>
+  	</init-param>
+  	
+  </filter>
+  <filter-mapping>
+  	<filter-name>encodingFilter</filter-name>
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping>
+  
+  
+  <!-- 配置freemaker  -->
+  <servlet>
+	<servlet-name>freemarker</servlet-name>
+	<servlet-class>freemarker.ext.servlet.FreemarkerServlet</servlet-class>
+
+	<!-- 模板的查找路径 从上下文根路径查找模板 ftl -->
+	<init-param>
+		<param-name>TemplatePath</param-name>
+		<param-value>/</param-value>
+	</init-param>
+
+	<!-- 是否不需要缓存 true表示不需要 false表示需要 -->
+	<init-param>
+		<param-name>NoCache</param-name>
+		<param-value>true</param-value>
+	</init-param>
+
+	<!-- 最终显示的是html -->
+	<init-param>
+		<param-name>ContentType</param-name>
+		<param-value>text/html;charset=UTF-8</param-value>
+	</init-param>
+
+	<!-- 定时刷新模板 -->
+	<init-param>
+		<param-name>template_update_delay</param-name>
+		<param-value>0</param-value> <!-- 0是用于开发，只使用更高的值. -->
+	</init-param>
+
+	<!-- 默认字符集 -->
+	<init-param>
+		<param-name>default_encoding</param-name>
+		<param-value>UTF-8</param-value>
+	</init-param>
+
+	<!-- 数字的格式 -->
+	<init-param>
+		<param-name>number_format</param-name>
+		<param-value>0.##</param-value>
+	</init-param>
+
+		<!-- servlet 容器在什么时候实例化 大于等于0时容器启动时实例化 小于0时第一次访问的时候实例化 -->
+	<load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+	<servlet-name>freemarker</servlet-name>
+	<url-pattern>*.ftl</url-pattern>
+  </servlet-mapping>
+
+  <!--  springmvc配置-->
+  <servlet>
+    <servlet-name>mvc</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>mvc</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+  
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
+</web-app>
